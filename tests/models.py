@@ -1,5 +1,6 @@
-from django_deprecate_fields import deprecate_field
 from django.db import models
+
+from django_deprecate_fields import deprecate_field
 
 
 def calc_baz(_):
@@ -14,4 +15,6 @@ class DeprecationModel(models.Model):
     bar = deprecate_field(models.CharField(max_length=30), return_instead="bar")
     baz = deprecate_field(models.CharField(max_length=30), return_instead=calc_baz)
     eggs = models.CharField(max_length=30, blank=True)
-    ham = deprecate_field(models.CharField(max_length=30), return_instead=_deprecate_ham)
+    ham = deprecate_field(
+        models.CharField(max_length=30), return_instead=_deprecate_ham
+    )

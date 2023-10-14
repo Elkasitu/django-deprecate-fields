@@ -19,7 +19,6 @@ class DeprecatedField(object):
         self.val = val
         self.raise_on_access = raise_on_access
 
-
     def _get_name(self, obj):
         """
         Try to find this field's name in the model class

@@ -4,7 +4,7 @@ from django_deprecate_fields.deprecate_field import DeprecatedField
 from tests.models import DeprecationModel
 
 
-@pytest.mark.filterwarnings('ignore::DeprecationWarning')
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 class TestCore:
     def test_descriptor_access(self):
         """
