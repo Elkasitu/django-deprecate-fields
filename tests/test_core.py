@@ -1,7 +1,73 @@
 import pytest
 
 from django_deprecate_fields.deprecate_field import DeprecatedField
-from tests.models import DeprecationModel
+from tests.models import DeprecationModel, InheritingDeprecationModel
+
+
+class TestWarnings:
+    def test_deprecation_warning(self):
+        with pytest.deprecated_call():
+            DeprecationModel().foo
+
+
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+class TestLogging:
+    def test_logging_read(self, caplog):
+        """
+        Test that accessing a deprecated field produces a correct log entry.
+        """
+        # trigger a logging of the deprecated field being accessed
+        DeprecationModel().foo
+        assert len(caplog.records) == 1
+        assert "Accessing deprecated field" in caplog.records[0].msg
+        assert caplog.records[0].levelname == "WARNING"
+
+    def test_logging_write(self, caplog):
+        """
+        Test that writing to a deprecated field produces a correct log entry.
+        """
+        DeprecationModel().foo = 5
+        assert len(caplog.records) == 1
+        assert "Writing to deprecated field" in caplog.records[0].msg
+        assert caplog.records[0].levelname == "WARNING"
+        # rest its value as it's kept across instances
+        DeprecationModel().foo = None
+
+    def test_logging_instance(self, caplog):
+        """
+        Test that access through a model instance produces a correct log entry.
+        """
+        DeprecationModel().foo
+        assert (
+            caplog.records[0].msg == "Accessing deprecated field DeprecationModel.foo"
+        )
+
+    def test_logging_class(self, caplog):
+        """
+        Test that access through a model class produces a correct log entry.
+        """
+        DeprecationModel.foo
+        assert (
+            caplog.records[0].msg == "Accessing deprecated field DeprecationModel.foo"
+        )
+        assert (
+            caplog.records[0].msg == "Accessing deprecated field DeprecationModel.foo"
+        )
+
+    def test_logging_super(self, caplog):
+        """
+        Test that access through a super object produces a correct log entry.
+        """
+        # since cheese calls super().foo we should be able to test how the descriptor
+        # handles super objects
+        InheritingDeprecationModel().cheese
+        assert (
+            caplog.records[0].msg == "Accessing deprecated field DeprecationModel.foo"
+        )
+
+    def test_logging_unknown(self, caplog):
+        DeprecatedField(5)._log_read()
+        assert caplog.records[0].msg == "Accessing unknown deprecated field"
 
 
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")

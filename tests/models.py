@@ -18,3 +18,9 @@ class DeprecationModel(models.Model):
     ham = deprecate_field(
         models.CharField(max_length=30), return_instead=_deprecate_ham
     )
+
+
+class InheritingDeprecationModel(DeprecationModel):
+    @property
+    def cheese(self):
+        return super().foo

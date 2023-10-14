@@ -13,23 +13,28 @@ class DeprecatedField(object):
 
     def __init__(self, val):
         self.val = val
+        self.model_name = "Unknown"
+        self.field_name = "unknown"
 
-    def _get_name(self, obj):
+    def _warn(self, prefix):
         """
-        Try to find this field's name in the model class
+        Log and warn about access to the deprecated field.
         """
-        for k, v in type(obj).__dict__.items():
-            if v is self:
-                return k
-        return "<unknown>"
+        if (name := str(self)) and name == "Unknown.unknown":
+            message = f"{prefix} unknown deprecated field"
+        else:
+            message = f"{prefix} deprecated field {name}"
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        logger.warning(message)
 
-    def __get__(self, obj, type=None):
-        msg = "accessing deprecated field %s.%s" % (
-            obj.__class__.__name__,
-            self._get_name(obj),
-        )
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        logger.warning(msg)
+    def _log_read(self):
+        self._warn("Accessing")
+
+    def _log_write(self):
+        self._warn("Writing to")
+
+    def __get__(self, obj, objtype=None):
+        self._log_read()
         if obj is None:
             return self
         if not callable(self.val):
@@ -40,16 +45,18 @@ class DeprecatedField(object):
         return self.val(obj)
 
     def __set__(self, obj, val):
-        msg = "writing to deprecated field %s.%s" % (
-            obj.__class__.__name__,
-            self._get_name(obj),
-        )
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        logger.warning(msg)
+        self._log_write()
         self.val = val
 
+    def __set_name__(self, owner, name):
+        self.model_name = owner.__name__
+        self.field_name = name
 
-def deprecate_field(field_instance, return_instead=None):
+    def __str__(self):
+        return f"{self.model_name}.{self.field_name}"
+
+
+def deprecate_field(base_field, return_instead=None):
     """
     Can be used in models to delete a Field in a Backwards compatible manner.
     The process for deleting old model Fields is:
@@ -65,5 +72,5 @@ def deprecate_field(field_instance, return_instead=None):
     if not set(sys.argv) & {"makemigrations", "migrate", "showmigrations"}:
         return DeprecatedField(return_instead)
 
-    field_instance.null = True
-    return field_instance
+    base_field.null = True
+    return base_field
