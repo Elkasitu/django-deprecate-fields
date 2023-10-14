@@ -14,7 +14,6 @@ class DeprecatedField(object):
     def __init__(self, val):
         self.val = val
 
-
     def _get_name(self, obj):
         """
         Try to find this field's name in the model class
